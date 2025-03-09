@@ -6,7 +6,7 @@ on:
       KERNEL_REPO:
         description: 'KERNEL_REPO'
         required: true
-        default: 'https://github.com/zainarbani/kernel-mtk-4.19'
+        default: 'https://github.com/IamCodebreaker/kernel-mtk-4.19'
       KERNEL_BRANCH:
         description: 'KERNEL_BRANCH'
         required: true
@@ -27,20 +27,20 @@ on:
 jobs:
   build:
     if: github.event.repository.owner.id == github.event.sender.id
-    runs-on: ubuntu-latest
+    runs-on: buildjet-8vcpu-ubuntu-2204
     permissions:
       contents: write
     steps:
 
-    - name: Prepare Environment
+    - name: Prepare Env
       run: |
-        sudo apt update &> /dev/null
+        sudo apt update  &> /dev/null
         sudo apt -y install gawk aria2 git ccache automake flex lzop bison gperf build-essential zip curl zlib1g-dev gcc-multilib g++-multilib libxml2-utils bzip2 libbz2-dev libbz2-1.0 libghc-bzlib-dev squashfs-tools pngcrush schedtool dpkg-dev liblz4-tool make optipng maven libssl-dev pwgen libswitch-perl policycoreutils minicom libxml-sax-base-perl libxml-simple-perl bc libc6-dev-i386 lib32ncurses5-dev libx11-dev lib32z-dev libgl1-mesa-dev xsltproc unzip device-tree-compiler python2 python3 &> /dev/null
         git config --global user.name "bot"
         git config --global user.email "bot@email.com"
         mkdir -p $GITHUB_WORKSPACE/project
-
-    - name: Prepare Toolchain
+          
+    - name: Prepare TC
       run: |
         mkdir -p $GITHUB_WORKSPACE/project/clang
         CLANG_URL=$(curl -Ls https://raw.githubusercontent.com/ZyCromerZ/Clang/main/Clang-main-link.txt)
@@ -53,7 +53,7 @@ jobs:
         git clone -b ${{ github.event.inputs.KERNEL_BRANCH }} ${{ github.event.inputs.KERNEL_REPO }} linux --recurse-submodules --depth=1 &> /dev/null
         git clone -b rosemary-4.19 https://github.com/zainarbani/AnyKernel3 AnyKernel3 --depth=1 &> /dev/null
 
-    - name: Build Kernel
+    - name: Building Kernel
       run: |
         cd $GITHUB_WORKSPACE/project/linux
         PATH=$GITHUB_WORKSPACE/project/clang/bin:$PATH
@@ -64,7 +64,7 @@ jobs:
         echo "CLANG_VER=$(clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g')" >> $GITHUB_ENV
         export ARCH=arm64
         export KBUILD_BUILD_HOST=builder
-        export KBUILD_BUILD_USER=zainarbani
+        export KBUILD_BUILD_USER=Dequr01
         export KBUILD_COMPILER_STRING="$(clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
         echo "-Amogus" > localversion
         make O=out ARCH=$ARCH ${{ github.event.inputs.KERNEL_DEFCONFIG }}
@@ -80,7 +80,7 @@ jobs:
         make -j$(nproc --all) O=out CC=clang ARCH=$ARCH CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 LD=ld.lld NM=llvm-nm AR=llvm-ar OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump
         cp out/arch/arm64/boot/Image.gz $GITHUB_WORKSPACE/project/Image.gz-ksu
 
-    - name: Prepare AnyKernel3
+    - name: Prepare AK3
       run: |
         cd $GITHUB_WORKSPACE/project/AnyKernel3
         cp $GITHUB_WORKSPACE/project/Image.gz Image.gz
@@ -88,7 +88,7 @@ jobs:
         zip -r9 $GITHUB_WORKSPACE/project/Amogus.zip -- *
         cp -f $GITHUB_WORKSPACE/project/Image.gz-ksu Image.gz
         zip -r9 $GITHUB_WORKSPACE/project/Amogus-KSU-Next.zip -- *
-
+        
     - name: Upload Release
       uses: softprops/action-gh-release@v1
       with:
@@ -102,6 +102,4 @@ jobs:
           Branch: ${{ github.event.inputs.KERNEL_BRANCH }}
           Config: ${{ github.event.inputs.KERNEL_DEFCONFIG }}
       env:
-        G
-::contentReference[oaicite:0]{index=0}
- 
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
